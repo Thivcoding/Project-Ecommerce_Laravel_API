@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BakongPaymentController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\OrderController;
@@ -24,6 +25,9 @@ Route::post('auth/login', [AuthController::class,'login']);
 
 Route::apiResource('products',ProductController::class)->only(['index','show']);
 
+Route::post('/bakong/callback', [BakongPaymentController::class, 'callback'])
+        ->name('bakong.callback');
+
 // user + admin
 Route::middleware(['auth:api'])->group(function () {
 
@@ -38,6 +42,9 @@ Route::middleware(['auth:api'])->group(function () {
     Route::delete('/cart/clear', [CartController::class, 'clear']);
 
     Route::apiResource('orders',OrderController::class);
+
+   Route::post('/bakong/pay/{order}', [BakongPaymentController::class, 'create']);
+    Route::get('/bakong/check/{payment}', [BakongPaymentController::class, 'check']);
 });
 
 // admin 

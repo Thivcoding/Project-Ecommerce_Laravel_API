@@ -50,13 +50,15 @@ class OrderController extends Controller
         });
 
         // បង្កើត order (បន្ថែម phone & address)
-        $order = Order::create([
-            'user_id'     => $user->id,
-            'phone'       => $request->phone,
-            'address'     => $request->address,
-            'total_price' => $total,
-            'status'      => 'pending'
-        ]);
+       $order = Order::create([
+                'user_id'      => $user->id,
+                'phone'        => $request->phone,
+                'address'      => $request->address,
+                'total_price'  => $total,
+                'status'       => 'pending',
+                'order_number' => Order::generateOrderNumber(), 
+                'payment_status'=> 'unpaid',                    
+            ]);
 
         // បង្កើត order items
         foreach ($cartItems as $item) {

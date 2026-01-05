@@ -13,15 +13,40 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id');
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+
+            // Contact
             $table->string('phone', 20);
             $table->text('address');
-            $table->decimal('total_price',8,2);
-            $table->enum('status',['pending','paid','shipped','cancelled','completed'])->default('pending');
+
+            // Order info
+            $table->string('order_number')->unique(); // ORD-20250103-0001
+            $table->decimal('total_price', 10, 2);
+
+            // Order status (logistics)
+            $table->enum('status', [
+                'pending',      // order created
+                'processing',   // payment confirmed
+                'shipped',
+                'delivered',
+                'cancelled',
+                'completed'
+            ])->default('pending');
+
+            // Payment summary (ONLY STATUS)
+            $table->enum('payment_status', [
+                'unpaid',
+                'paid',
+                'refunded'
+            ])->default('unpaid');
+
             $table->timestamps();
 
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->index('order_number');
+            $table->index('status');
+            $table->index('payment_status');
         });
+
     }
 
     /**
