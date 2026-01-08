@@ -25,6 +25,8 @@ Route::post('auth/login', [AuthController::class,'login']);
 
 Route::apiResource('products',ProductController::class)->only(['index','show']);
 
+Route::apiResource('categories',CategoryController::class)->only(['index','show']);
+
 Route::post('/bakong/callback', [BakongPaymentController::class, 'callback'])
         ->name('bakong.callback');
 
@@ -35,7 +37,6 @@ Route::middleware(['auth:api'])->group(function () {
     Route::post('/user', [AuthController::class, 'updateProfile']);
 
     // user + admin
-    Route::apiResource('categories',CategoryController::class)->only(['index','show']);
 
     Route::apiResource('cart', CartController::class)->except(['create','edit','show','destroy']);
     Route::delete('/cart/product/{productId}', [CartController::class, 'destroyByProduct']);
