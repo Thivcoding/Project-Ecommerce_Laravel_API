@@ -9,58 +9,78 @@ class Payment extends Model
 {
     use HasFactory;
 
+    // Mass assignable fields
     protected $fillable = [
         'order_id',
 
-        // payment info
+        // Payment method info
         'method',
         'invoice_no',
 
-        // bakong
+        // Bakong transaction
         'bakong_txn_id',
         'qr_string',
 
-        // money
+        // Money info
         'amount',
         'currency',
 
-        // status
+        // Status
         'status',
         'paid_at',
     ];
 
+    // Casts
     protected $casts = [
         'amount'  => 'decimal:2',
-        'paid_at'=> 'datetime',
+        'paid_at' => 'datetime',
     ];
 
     /* ======================
-        Relationships
+       Relationships
     ====================== */
-
     public function order()
     {
         return $this->belongsTo(Order::class);
     }
 
     /* ======================
-        Helpers (Recommended)
+       Helpers
     ====================== */
 
+    /**
+     * Mark payment as paid and update related order
+     */
     public function markAsPaid()
     {
         $this->update([
             'status'  => 'paid',
-            'paid_at'=> now(),
+            'paid_at' => now(),
         ]);
 
-        $this->order->markAsPaid();
+        // Safely update order if exists
+        if ($this->order) {
+            $this->order->markAsPaid();
+        }
     }
 
+    /**
+     * Mark payment as failed
+     */
     public function markAsFailed()
     {
         $this->update([
             'status' => 'failed',
+        ]);
+    }
+
+    /**
+     * Mark payment as cancelled
+     */
+    public function markAsCancelled()
+    {
+        $this->update([
+            'status' => 'cancelled',
         ]);
     }
 }

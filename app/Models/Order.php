@@ -19,13 +19,12 @@ class Order extends Model
         'payment_status',
     ];
 
-
     protected $casts = [
         'total_price' => 'decimal:2',
     ];
 
     /* ======================
-        Relationships
+       Relationships
     ====================== */
 
     public function user()
@@ -38,17 +37,18 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
-    //  IMPORTANT: One order → many payments
     public function payments()
     {
         return $this->hasMany(Payment::class);
     }
 
     /* ======================
-        Business Logic
+       Business Logic
     ====================== */
 
-    // Generate Order Number
+    /**
+     * Generate a unique order number
+     */
     public static function generateOrderNumber(): string
     {
         $date = now()->format('Ymd');
@@ -64,17 +64,30 @@ class Order extends Model
         return 'ORD-' . $date . '-' . str_pad($number, 4, '0', STR_PAD_LEFT);
     }
 
-    // Mark order as paid (called after payment success)
+    /**
+     * Mark order as paid (after successful payment)
+     */
     public function markAsPaid()
     {
         $this->update([
             'payment_status' => 'paid',
-            'status' => 'processing',
+            'status' => 'processing', // you can adjust based on your workflow
+        ]);
+    }
+
+    /**
+     * Mark order as cancelled (optional, for cancelled payment)
+     */
+    public function markAsCancelled()
+    {
+        $this->update([
+            'payment_status' => 'cancelled',
+            'status' => 'cancelled',
         ]);
     }
 
     /* ======================
-        Scopes
+       Scopes
     ====================== */
 
     public function scopePending($query)

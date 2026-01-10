@@ -20,38 +20,43 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// Public routes
 Route::post('auth/register', [AuthController::class,'register']);
 Route::post('auth/login', [AuthController::class,'login']);
 
-Route::apiResource('products',ProductController::class)->only(['index','show']);
+Route::apiResource('products', ProductController::class)->only(['index','show']);
+Route::apiResource('categories', CategoryController::class)->only(['index','show']);
 
-Route::apiResource('categories',CategoryController::class)->only(['index','show']);
-
+// Bakong callback (from Bakong server)
 Route::post('/bakong/callback', [BakongPaymentController::class, 'callback'])
-        ->name('bakong.callback');
+    ->name('bakong.callback');
 
-// user + admin
+// Protected routes (user + admin)
 Route::middleware(['auth:api'])->group(function () {
 
-    Route::get('/user',[AuthController::class, 'profile']);
+    // User profile
+    Route::get('/user', [AuthController::class, 'profile']);
     Route::post('/user', [AuthController::class, 'updateProfile']);
 
-    // user + admin
-
+    // Cart
     Route::apiResource('cart', CartController::class)->except(['create','edit','show','destroy']);
     Route::delete('/cart/product/{productId}', [CartController::class, 'destroyByProduct']);
     Route::delete('/cart/clear', [CartController::class, 'clear']);
 
-    Route::apiResource('orders',OrderController::class);
+    // Orders
+    Route::apiResource('orders', OrderController::class);
 
-   Route::post('/bakong/pay/{order}', [BakongPaymentController::class, 'create']);
-    Route::get('/bakong/check/{payment}', [BakongPaymentController::class, 'check']);
+    // Bakong Payment routes
+    Route::post('/bakong/pay/{order}', [BakongPaymentController::class, 'create']); // generate KHQR
+    Route::post('/bakong/verify', [BakongPaymentController::class, 'verifyTransaction']); // verify MD5
+    Route::get('/bakong/check/{payment}', [BakongPaymentController::class, 'check']); // manual check
+    Route::post('/bakong/cancel/{payment}', [BakongPaymentController::class, 'cancel']); // cancel payment
 });
 
-// admin 
+// Admin-only routes
 Route::middleware(['auth:api','role:admin'])->group(function () {
-    Route::apiResource('categories',CategoryController::class)->except(['index','show']);
-    Route::apiResource('products',ProductController::class)->except('index','show');
+    Route::apiResource('categories', CategoryController::class)->except(['index','show']);
+    Route::apiResource('products', ProductController::class)->except(['index','show']);
 });
 
 
