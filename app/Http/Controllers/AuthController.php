@@ -5,12 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class AuthController extends Controller
 {
-    //
+    // REGISTER
     public function register(Request $request)
     {
         $input = $request->validate([
@@ -20,55 +20,56 @@ class AuthController extends Controller
             'image'    => 'nullable|image|mimes:jpg,jpeg,png',
         ]);
 
-        $input['role'] = 'admin';
+        $input['role'] = 'admin'; // set role automatically
 
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('users', 'public');
-            $input['image'] = $path;
+            $uploadedFile = Cloudinary::upload(
+                $request->file('image')->getRealPath(),
+                ['folder'=>'users/images']
+            );
+            $input['image'] = $uploadedFile->getSecurePath();
+            $input['cloudinary_id'] = $uploadedFile->getPublicId();
         }
 
         $input['password'] = Hash::make($input['password']);
-
         $user = User::create($input);
+
+        $token = JWTAuth::fromUser($user);
 
         return response()->json([
             'message' => 'Register successfully',
-            'user'    => $user
+            'user'    => $user,
+            'token'   => $token
         ], 201);
     }
 
-    // login
+    // LOGIN
     public function login(Request $request){
-        // Validate input
         $credentials = $request->only('email','password');
 
-        // Attempt login
         if (!$token = JWTAuth::attempt($credentials)) {
-            return response()->json([
-                'message' => 'Invalid email or password'
-            ], 401);
+            return response()->json(['message'=>'Invalid email or password'],401);
         }
 
         $user = auth()->user();
 
-        // Return token + user info
         return response()->json([
-            'message' => 'Login successful',
-            'token' => $token,
-            'user'  => $user,
-        ], 200);
+            'message'=>'Login successful',
+            'token'=>$token,
+            'user'=>$user
+        ],200);
     } 
 
-    // get user
+    // GET PROFILE
     public function profile(Request $request) {
         return response()->json($request->user());
     }
 
-    // Update Profile
+    // UPDATE PROFILE
     public function updateProfile(Request $request)
     {
         try {
-            $user = User::findOrFail($request->user()->id);
+            $user = auth()->user();
 
             $input = $request->validate([
                 'name'     => 'sometimes|string|max:255',
@@ -82,32 +83,36 @@ class AuthController extends Controller
             }
 
             if ($request->hasFile('image')) {
-                // Delete old image
-                if ($user->image && Storage::disk('public')->exists($user->image)) {
-                    Storage::disk('public')->delete($user->image);
+                // Delete old image in Cloudinary
+                if ($user->cloudinary_id) {
+                    Cloudinary::destroy($user->cloudinary_id);
                 }
-                $input['image'] = $request->file('image')->store('users', 'public');
+
+                $uploadedFile = Cloudinary::upload(
+                    $request->file('image')->getRealPath(),
+                    ['folder'=>'users/images']
+                );
+
+                $input['image'] = $uploadedFile->getSecurePath();
+                $input['cloudinary_id'] = $uploadedFile->getPublicId();
             }
 
             $user->update($input);
             $user->refresh();
 
-            $token = auth()->login($user);
+            $token = JWTAuth::fromUser($user);
 
             return response()->json([
                 'message' => 'Profile updated successfully',
                 'user'    => $user,
-                'token'   => $token,
-            ]);
-            
+                'token'   => $token
+            ],200);
+
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Update failed',
-                'error' => $e->getMessage()
-            ], 500);
+                'message'=>'Update failed',
+                'error'=>$e->getMessage()
+            ],500);
         }
     }
-
-
-
 }

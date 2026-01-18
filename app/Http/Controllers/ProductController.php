@@ -4,148 +4,97 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class ProductController extends Controller
 {
-    /**
-     * GET /api/products
-     * Get all products
-     */
+    // GET all products
     public function index()
     {
-        $products = Product::with('category')
-            ->latest()
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $products
-        ], 200);
+        $products = Product::with('category')->latest()->get();
+        return response()->json(['success'=>true, 'data'=>$products], 200);
     }
 
-    /**
-     * POST /api/products
-     * Create new product (with image)
-     */
+    // GET single product
+    public function show($id)
+    {
+        $product = Product::with('category')->find($id);
+        if (!$product) return response()->json(['success'=>false,'message'=>'Product not found'],404);
+        return response()->json(['success'=>true,'data'=>$product],200);
+    }
+
+    // CREATE product
     public function store(Request $request)
     {
-
         $data = $request->validate([
-            'category_id' => 'required|exists:categories,id',
-            'name'        => 'required|string|max:255',
-            'price'       => 'required|numeric|min:0',
-            'stock'       => 'required|integer|min:0',
-            'image'       => 'nullable|image',
-            'description' => 'nullable|string'
+            'category_id'=>'required|exists:categories,id',
+            'name'=>'required|string|max:255',
+            'price'=>'required|numeric|min:0',
+            'stock'=>'required|integer|min:0',
+            'description'=>'nullable|string',
+            'image'=>'nullable|image'
         ]);
 
-        // upload image
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')
-                ->store('products', 'public');
+            $uploadedFile = Cloudinary::upload(
+                $request->file('image')->getRealPath(),
+                ['folder'=>'products/images']
+            );
+            $data['image_url'] = $uploadedFile->getSecurePath();
+            $data['cloudinary_id'] = $uploadedFile->getPublicId();
         }
 
         $product = Product::create($data);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Product created successfully',
-            'data'    => $product
-        ], 201);
+        return response()->json(['success'=>true,'message'=>'Product created successfully','data'=>$product],201);
     }
 
-    /**
-     * GET /api/products/{id}
-     * Show single product
-     */
-    public function show(string $id)
-    {
-        $product = Product::with('category')->find($id);
-
-        if (!$product) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Product not found'
-            ], 404);
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => $product
-        ], 200);
-    }
-
-    /**
-     * PUT /api/products/{id}
-     * Update product (replace image)
-     */
-    public function update(Request $request, string $id)
+    // UPDATE product
+    public function update(Request $request, $id)
     {
         $product = Product::find($id);
-
-        if (!$product) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Product not found'
-            ], 404);
-        }
+        if (!$product) return response()->json(['success'=>false,'message'=>'Product not found'],404);
 
         $data = $request->validate([
-            'category_id' => 'required|exists:categories,id',
-            'name'        => 'required|string|max:255',
-            'price'       => 'required|numeric|min:0',
-            'stock'       => 'required|integer|min:0',
-            'image'       => 'nullable|image',
-            'description' => 'nullable|string'
+            'category_id'=>'required|exists:categories,id',
+            'name'=>'required|string|max:255',
+            'price'=>'required|numeric|min:0',
+            'stock'=>'required|integer|min:0',
+            'description'=>'nullable|string',
+            'image'=>'nullable|image'
         ]);
 
-        // replace image
         if ($request->hasFile('image')) {
-
             // delete old image
-            if ($product->image && Storage::disk('public')->exists($product->image)) {
-                Storage::disk('public')->delete($product->image);
+            if ($product->cloudinary_id) {
+                Cloudinary::destroy($product->cloudinary_id);
             }
 
-            $data['image'] = $request->file('image')
-                ->store('products', 'public');
+            $uploadedFile = Cloudinary::upload(
+                $request->file('image')->getRealPath(),
+                ['folder'=>'products/images']
+            );
+            $data['image_url'] = $uploadedFile->getSecurePath();
+            $data['cloudinary_id'] = $uploadedFile->getPublicId();
         }
 
         $product->update($data);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Product updated successfully',
-            'data'    => $product
-        ], 200);
+        return response()->json(['success'=>true,'message'=>'Product updated successfully','data'=>$product],200);
     }
 
-    /**
-     * DELETE /api/products/{id}
-     * Delete product + image
-     */
-    public function destroy(string $id)
+    // DELETE product
+    public function destroy($id)
     {
         $product = Product::find($id);
+        if (!$product) return response()->json(['success'=>false,'message'=>'Product not found'],404);
 
-        if (!$product) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Product not found'
-            ], 404);
-        }
-
-        // delete image
-        if ($product->image && Storage::disk('public')->exists($product->image)) {
-            Storage::disk('public')->delete($product->image);
+        if ($product->cloudinary_id) {
+            Cloudinary::destroy($product->cloudinary_id);
         }
 
         $product->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Product deleted successfully'
-        ], 200);
+        return response()->json(['success'=>true,'message'=>'Product deleted successfully'],200);
     }
 }

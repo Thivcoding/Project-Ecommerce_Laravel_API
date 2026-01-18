@@ -9,16 +9,10 @@ class Product extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name','price','stock','category_id','description','image'];
-    
-    protected $appends = ['image_url'];
-
-    public function getImageUrlAttribute()
-    {
-        return $this->image
-            ? url('storage/' . $this->image)
-            : null;
-    }
+    protected $fillable = [
+        'category_id', 'name', 'price', 'stock',
+        'description', 'image_url', 'cloudinary_id'
+    ];
 
     // Relationships
     public function category() { return $this->belongsTo(Category::class); }
