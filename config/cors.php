@@ -22,8 +22,9 @@ return [
     'allowed_origins' => [
         'http://localhost:5173', 
         'http://127.0.0.1:5173',
-        'http://localhost:8000',      // បន្ថែមនេះ
-        'http://127.0.0.1:8000'       // បន្ថែមនេះ
+        'http://localhost:8000',    
+        'http://127.0.0.1:8000',     
+        'https://project-ecommerce-laravel-api.onrender.com'
     ],
 
     'allowed_origins_patterns' => [],
