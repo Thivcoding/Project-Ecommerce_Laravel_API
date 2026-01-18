@@ -18,8 +18,9 @@ class AuthController extends Controller
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|min:6',
             'image'    => 'nullable|image|mimes:jpg,jpeg,png',
-            'role' =>'admin'
         ]);
+
+        $input['role'] = 'admin';
 
         if ($request->hasFile('image')) {
             $path = $request->file('image')->store('users', 'public');
