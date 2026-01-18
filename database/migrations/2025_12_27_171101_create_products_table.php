@@ -18,8 +18,9 @@ return new class extends Migration
             $table->decimal('price',8,2);
             $table->integer('stock');
             $table->text('description')->nullable();
-            $table->string('image_url')->nullable();       // Cloudinary secure URL
-            $table->string('cloudinary_id')->nullable();   // Cloudinary public_id for delete
+            $table->string('image')->nullable();
+            $table->string('image_url')->nullable();
+            $table->string('cloudinary_id')->nullable();
             $table->timestamps();
 
             // then add foreign key
