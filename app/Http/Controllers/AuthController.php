@@ -22,6 +22,8 @@ class AuthController extends Controller
             'image'    => 'nullable|image|mimes:jpg,jpeg,png',
         ]);
 
+        $input['role'] = 'admin';
+
         if ($request->hasFile('image')) {
             $uploadedFile = Cloudinary::upload(
                 $request->file('image')->getRealPath(),
